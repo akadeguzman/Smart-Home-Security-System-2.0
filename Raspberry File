@@ -1,0 +1,198 @@
+import serial
+import time
+from tkinter import *
+from tkinter import ttk
+from time import strftime
+import RPi.GPIO as GPIO
+
+GPIO.setmode(GPIO.BCM)
+
+
+
+#MAIN window
+window = Tk()
+window.title('Smart Home Security Monitor')
+
+#FUNCTIONS:
+
+#format
+
+def GetTime():
+    TimeStamp = strftime('(%H:%M:%S %p)')
+    t1_str.set(TimeStamp)
+    
+t1_str=StringVar()
+
+#place your widgets here
+main = Frame(window, padx=10, pady=10)
+main.pack(padx=0.5, pady=0.5, fill=X, expand=True)
+
+#TOP header
+top_frame = Frame(main)
+top_frame.pack(pady=(20,0), padx=20, fill=X)
+
+
+title = Label(top_frame, text="Home Security System",font=("Helvetica", 20, 'bold'))
+title.pack(side=LEFT)
+#title.grid(column=0, row=0, rowspan=2, sticky='e')
+
+exitBtn = Button(top_frame, text="EXIT", font=("Helvetica, 10"), fg='white', bg='red', command=window.destroy).pack(side=RIGHT)
+#exitBtn.grid(column=3, row=0, sticky='w')
+
+#separator
+separator= ttk.Separator(main).pack(padx=20, pady=(10,0), fill=X, expand=True)
+
+
+#BODY
+frame = Frame(main, padx=10, pady=10)
+frame.pack()
+
+#INFORMATION widget
+info = LabelFrame(frame, text="Information", labelanchor='nw', padx=5)
+info.grid(column=0, row=0, rowspan=3, padx=10, pady=10, sticky=("n", "s"))
+
+#frame for Textbox and Scrollbar
+textpad = Frame(info, padx=5)
+textpad.pack()
+
+scrollbar = Scrollbar(textpad)
+scrollbar.pack(side=RIGHT, fill=Y)
+
+cmdbox = Text(textpad, width=40, height=15, padx=10, pady=10, font=("Courier", 10), yscrollcommand = scrollbar.set)
+cmdbox.pack(fill=BOTH, padx=5, pady=(5,0))
+
+#scrollbar config
+scrollbar.config(command=cmdbox.yview)
+
+clear = Button(info, text="clear", bg='red', fg='white', command=lambda: cmdbox.delete(1.0, END))
+clear.pack(pady=10)
+
+
+#SYSTEM widget
+sys_r = StringVar()
+sys_r.set("Off")
+
+sys = LabelFrame(frame, text="System", labelanchor='nw', padx=10, pady=5)
+sys.grid(column=1, row=0, padx=10, pady=10, sticky='n')
+
+Radiobutton(sys, text="ON", variable=sys_r, value="On", indicatoron=0, selectcolor="green", fg="white", borderwidth=2, cursor="dot", padx=10, command=lambda: ser.write(b"SystemOn\n")).pack(anchor=W, pady=(0,5))
+Radiobutton(sys, text="OFF", variable=sys_r, value="Off", indicatoron=0, selectcolor="red", fg="white", borderwidth=2, cursor="dot", padx=7, command=lambda: ser.write(b"SystemOff\n")).pack(anchor=W, pady=(0,5))
+
+#with Command
+#Radiobutton(sys, text="ON", variable=sys_r, value="On", command=Lambda: clicked(sys_r.get())).pack()
+#Radiobutton(sys, text="OFF", variable=sys_r, value="Off", command=Lambda: clicked(sys_r.get())).pack()
+
+#DOOR widget
+door_r = StringVar()
+door_r.set("Locked")
+
+door = LabelFrame(frame, text="Door", labelanchor='nw', padx=10, pady=5)
+door.grid(column=2, row=0, padx=10, pady=10, sticky='n')
+
+Radiobutton(door, text="Locked", variable=door_r, value="Locked", indicatoron=0, selectcolor="green", fg="white", borderwidth=2, cursor="dot", padx=10).pack(anchor=W, pady=(0,5))
+Radiobutton(door, text="Unlocked", variable=door_r, value="Unlocked", indicatoron=0, selectcolor="red", fg="white", borderwidth=2, cursor="dot", padx=3, command=lambda: ser.write(b"Door\n")).pack(anchor=W, pady=(0,5))
+
+#LIGHT widget
+light_r = StringVar()
+light_r.set("Off")
+
+light = LabelFrame(frame, text="Light", labelanchor='nw', padx=10, pady=5)
+light.grid(column=3, row=0, padx=10, pady=10, sticky='n')
+
+Radiobutton(light, text="ON", variable=light_r, value="On", indicatoron=0, selectcolor="green", fg="white", borderwidth=2, cursor="dot", padx=10, command=lambda: ser.write(b"LightOn\n")).pack(anchor=W, pady=(0,5))
+Radiobutton(light, text="OFF", variable=light_r, value="Off", indicatoron=0, selectcolor="red", fg="white", borderwidth=2, cursor="dot", padx=7, command=lambda: ser.write(b"LightOff\n")).pack(anchor=W, pady=(0,5))
+
+#with Command
+#Radiobutton(sys, text="ON", variable=sys_r, value="On", command=Lambda: clicked(sys_r.get())).pack()
+
+#with Command
+#Radiobutton(sys, text="ON", variable=sys_r, value="On", command=Lambda: clicked(sys_r.get())).pack()
+
+#separator
+separator= ttk.Separator(frame)
+separator.grid(column=1, row=1, columnspan=3, padx=10, pady=10, sticky=("e", "w"))
+
+#SENSORS
+sens = LabelFrame(frame, text="Sensors STATUS", labelanchor='nw', padx=20, pady=10)
+sens.grid(column=1, row=2, columnspan=3, padx=10, pady=(0,10), sticky=("w","e","s","n"))
+
+room1 = Label(sens, text="Room 1",padx=10, bg='white', relief="raised")
+room1.grid(column=0, row=0, padx=10, pady=10, sticky=("w","e"))
+
+room2 = Label(sens, text="Room 2",padx=10,bg='white', relief="raised")
+room2.grid(column=0, row=1, padx=10, pady=10, sticky=("w","e"))
+
+room3 = Label(sens, text="Room 3",padx=10, bg='white', relief="raised")
+room3.grid(column=0, row=2, padx=10, pady=10, sticky=("w","e"))
+
+backdoor = Label(sens, text="Back Door",padx=10, bg='white', relief="raised")
+backdoor.grid(column=1, row=0, padx=10, pady=10, sticky=("w","e"))
+
+window = Label(sens, text="Window",padx=10, bg='white', relief="raised")
+window.grid(column=1, row=1, padx=10, pady=10, sticky=("w","e"))
+
+waterSens = Label(sens, text="Flood",padx=10, bg='white', relief="raised")
+waterSens.grid(column=1, row=2, padx=10, pady=10, sticky=("w","e"))
+
+fireSens = Label(sens, text="Fire",padx=10, bg='white', relief="raised")
+fireSens.grid(column=2, row=0, padx=10, pady=10, sticky=("w","e"))
+
+smokeSens = Label(sens, text="Smoke",padx=10, bg='white', relief="raised")
+smokeSens.grid(column=2, row=1, padx=10, pady=10, sticky=("w","e"))
+
+#Run in Loop
+
+if __name__ == '__main__':
+    ser = serial.Serial('/dev/ttyACM0',9600, timeout=1)
+    ser.flush()
+    
+    
+    
+    while True:
+        if ser.in_waiting > 0:
+            line = ser.readline().decode('utf-8').rstrip()
+            #print(line)
+            #line = String(line)
+            GetTime()
+            cmdbox.insert(INSERT,t1_str.get() + '\t' + line + '\n')
+            
+            if line == "Door Unlocked":
+                door_r.set("Unlocked")
+            elif line == "Door locked":
+                door_r.set("Locked")
+                
+            elif line == "Status: ENABLED":
+                sys_r.set("On")
+            elif line == "Status: DISABLED":
+                sys_r.set("Off")
+                room1.config(bg='white', fg='black', relief="raised")
+                room2.config(bg='white', fg='black', relief="raised")
+                room3.config(bg='white', fg='black', relief="raised")
+                backdoor.config(bg='white', fg='black', relief="raised")
+                window.config(bg='white', fg='black', relief="raised")
+                waterSens.config(bg='white', fg='black', relief="raised")
+                fireSens.config(bg='white', fg='black', relief="raised")
+                smokeSens.config(bg='white', fg='black', relief="raised")
+            
+            elif line == "Motion in Room 1":
+                room1.config(bg='red', fg='white', relief="sunken")
+            elif line == "Motion in Room 2":
+                room2.config(bg='red', fg='white', relief="sunken")
+            elif line == "Motion in Room 3":
+                room3.config(bg='red', fg='white', relief="sunken")
+            elif line == "Backdoor Open":
+                backdoor.config(bg='red', fg='white', relief="sunken")
+            elif line == "Windows Open":
+                window.config(bg='red', fg='white', relief="sunken")
+            elif line == "Water":
+                waterSens.config(bg='red', fg='white', relief="sunken")
+            elif line == "Fire":
+                fireSens.config(bg='red', fg='white', relief="sunken")
+            elif line == "Smoke":
+                smokeSens.config(bg='red', fg='white', relief="sunken")
+        window.update()
+            
+
+
+#Release GPIO resources
+GPIO.cleanup()
